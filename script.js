@@ -789,7 +789,7 @@ const initContent = () => {
   bindText("pesan", config.pesan);
   bindText("kutipanPenutup", config.kutipanPenutup);
 
-  const heroLead = "Three years, countless stories. Terima kasih sudah menjadi bagian penting dalam perjalanan kita selama ini pak. Kita minta maaf ya pak untuk segala sikap, tutur kata yang kurang berkenan dan hal-hal yang mungkin pernah mengecewakan pak iwan selama ini. Semoga langkah pak iwan selalu dipenuhi hal-hal baik, sehat selalu dan bahagia selalu pak iwan safrudin dewa coding. from : anak anak pak iw <3";
+  const heroLead = "Three years, countless stories. Terima kasih sudah menjadi bagian penting dalam perjalanan kita selama ini pak. Kita minta maaf ya pak untuk segala sikap, tutur kata yang kurang berkenan dan hal-hal yang mungkin pernah mengecewakan pak iwan selama ini. Semoga langkah pak iwan selalu dipenuhi hal-hal baik, sehat selalu dan bahagia selalu pak iwan safrudin dewa coding.";
   bindText("heroLead", heroLead);
 
   renderPhotos();
