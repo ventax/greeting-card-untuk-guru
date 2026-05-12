@@ -63,7 +63,11 @@ const config = {
     "assets/photos/pentas_seni.png",
   ],
 
-  kutipanPenutup: "Seorang guru yang baik bisa menginspirasi harapan, membangkitkan imajinasi, dan menanamkan kecintaan belajar."
+  kutipanPenutup: "Seorang guru yang baik bisa menginspirasi harapan, membangkitkan imajinasi, dan menanamkan kecintaan belajar.",
+  lagu: "assets/song/ssstik.io_1778598913338.mp3",
+  confettiSfx: "assets/song/confetti-pop-sound-effect.mp3",
+  confettiSfxVolume: 1,
+  confettiSfxDelay: 500,
 };
 
 const iconMap = {
@@ -140,6 +144,103 @@ const playOpenSound = () => {
   } catch (error) {
     console.warn("Audio blocked", error);
   }
+};
+
+const playConfettiSfx = () => {
+  if (!config.confettiSfx) return;
+
+  const audio = new Audio(config.confettiSfx);
+  audio.volume =
+    typeof config.confettiSfxVolume === "number" ? config.confettiSfxVolume : 1;
+  audio.preload = "auto";
+  audio.setAttribute("playsinline", "");
+
+  const tryPlay = () => audio.play().then(() => true).catch(() => false);
+
+  tryPlay().then((ok) => {
+    if (ok) return;
+
+    const unlock = () => {
+      tryPlay().then((played) => {
+        if (!played) return;
+        window.removeEventListener("pointerdown", unlock);
+        window.removeEventListener("keydown", unlock);
+        window.removeEventListener("touchstart", unlock);
+      });
+    };
+
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    window.addEventListener("touchstart", unlock, { once: true, passive: true });
+  });
+};
+
+const setupAudio = () => {
+  if (!config.lagu) return;
+
+  const audio = document.createElement("audio");
+  audio.src = config.lagu;
+  audio.loop = true;
+  audio.preload = "auto";
+  audio.autoplay = true;
+  audio.setAttribute("playsinline", "");
+  audio.setAttribute("aria-hidden", "true");
+
+  document.body.appendChild(audio);
+
+  let unlocked = false;
+
+  const hidePrompt = () => {
+    const prompt = document.querySelector(".audio-prompt");
+    if (prompt) prompt.remove();
+  };
+
+  const tryPlay = async () => {
+    try {
+      await audio.play();
+      unlocked = true;
+      hidePrompt();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  const handleUnlock = () => {
+    if (unlocked) return;
+    tryPlay().then((ok) => {
+      if (ok) {
+        window.removeEventListener("pointerdown", handleUnlock);
+        window.removeEventListener("keydown", handleUnlock);
+        window.removeEventListener("touchstart", handleUnlock);
+      }
+    });
+  };
+
+  const ensurePrompt = () => {
+    if (document.querySelector(".audio-prompt")) return;
+    const overlay = document.createElement("div");
+    overlay.className = "audio-prompt";
+    overlay.innerHTML = `
+      <div class="audio-prompt-card">
+        <p class="audio-prompt-title">Putar lagu?</p>
+        <p class="audio-prompt-sub">Ketuk untuk memulai musik.</p>
+        <button class="audio-prompt-button" type="button">Mulai Musik</button>
+      </div>
+    `;
+    overlay
+      .querySelector(".audio-prompt-button")
+      .addEventListener("click", handleUnlock);
+    document.body.appendChild(overlay);
+  };
+
+  tryPlay().then((ok) => {
+    if (!ok) ensurePrompt();
+  });
+
+  window.addEventListener("pointerdown", handleUnlock);
+  window.addEventListener("keydown", handleUnlock);
+  window.addEventListener("touchstart", handleUnlock, { passive: true });
 };
 
 const bindText = (key, value) => {
@@ -324,6 +425,13 @@ const runConfetti = () => {
   if (!document.querySelector(".hero")) return;
 
   setTimeout(() => {
+    const sfxDelay =
+      typeof config.confettiSfxDelay === "number" ? config.confettiSfxDelay : 0;
+    if (sfxDelay > 0) {
+      window.setTimeout(playConfettiSfx, sfxDelay);
+    } else {
+      playConfettiSfx();
+    }
     const duration = 2500;
     const end = Date.now() + duration;
 
@@ -373,6 +481,7 @@ const initContent = () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   initContent();
+  setupAudio();
   initSwiper();
   setupScrollReveal();
   runHeroAnimation();

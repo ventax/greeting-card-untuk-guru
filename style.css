@@ -414,6 +414,7 @@ img {
   border-radius: 22px 30px 18px 28px;
   overflow: hidden;
   aspect-ratio: 4 / 3;
+  min-width: 0;
   background: #fff7ea;
   border: 2px dashed rgba(31, 36, 48, 0.14);
   box-shadow: 0 18px 30px rgba(31, 36, 48, 0.12);
@@ -891,6 +892,57 @@ img {
   box-shadow: var(--shadow-card);
 }
 
+.audio-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.audio-prompt-card {
+  background: #fffaf3;
+  border-radius: 18px 26px 16px 24px;
+  padding: 22px 26px;
+  text-align: center;
+  border: 2px dashed rgba(31, 36, 48, 0.16);
+  box-shadow: var(--shadow-card);
+  max-width: 360px;
+  width: 100%;
+}
+
+.audio-prompt-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: var(--blue-900);
+}
+
+.audio-prompt-sub {
+  margin: 0 0 16px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.audio-prompt-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #f25f5c, #f7b500);
+  box-shadow: 0 16px 24px rgba(242, 95, 92, 0.25);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+
+.audio-prompt-button:focus-visible {
+  outline: 2px solid rgba(31, 36, 48, 0.4);
+  outline-offset: 3px;
+}
+
 @media (orientation: landscape) and (max-width: 900px) {
   .rotate-hint {
     display: flex;
@@ -961,8 +1013,9 @@ img {
 }
 
 @media (max-width: 720px) {
-  .gift-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  .gallery .gift-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
   }
 
   .page {
@@ -1020,6 +1073,12 @@ img {
     flex-direction: row;
     align-items: center;
     gap: 8px;
+  }
+}
+
+@media (max-width: 300px) {
+  .gift-grid {
+    grid-template-columns: 1fr;
   }
 }
 
