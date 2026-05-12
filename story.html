@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pesan & Momen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;600;700&family=Dancing+Script:wght@600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="background" aria-hidden="true"></div>
+
+    <div class="rotate-hint" role="status" aria-live="polite">
+        <div class="rotate-card">
+            <p>Silakan putar ponsel ke mode portrait untuk pengalaman terbaik.</p>
+        </div>
+    </div>
+
+    <main class="page page--story">
+        <section class="section section--tilt-left message" id="message">
+            <div class="section-head">
+                <div>
+                    <p class="eyebrow">Ucapan dari kami</p>
+                    <h2 class="section-title">Pesan dari Kami</h2>
+                </div>
+            </div>
+            <blockquote class="message-card">
+                <span class="quote-mark">"</span>
+                <p data-bind="pesan"></p>
+                <cite>-- From : anak anak pak iw ♡</cite>
+            </blockquote>
+        </section>
+
+        <section class="section section--tilt-right timeline-section" id="timeline">
+            <div class="section-head">
+                <div>
+                    <p class="eyebrow">Perjalanan bersama</p>
+                    <h2 class="section-title">Momen yang Tak Terlupakan</h2>
+                </div>
+            </div>
+            <ol class="timeline" data-list="momen"></ol>
+        </section>
+
+        <nav class="page-nav" aria-label="Navigasi halaman">
+            <span class="nav-progress">Halaman 2 dari 3</span>
+            <div class="nav-actions">
+                <a class="nav-button" href="index.html">Kembali</a>
+                <a class="nav-button primary" href="signatures.html">Lanjut: Tanda Tangan</a>
+            </div>
+        </nav>
+
+        <footer class="footer">
+            <p>Dibuat dengan tawa, kenangan, dan banyak terima kasih.</p>
+        </footer>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
