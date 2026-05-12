@@ -58,7 +58,7 @@ const config = {
     "assets/photos/hari_batik.jpeg",
     "assets/photos/hbd_pak_iwan_2025.png",
     "assets/photos/hbd_pak_iwan_2026.jpeg",
-    "assets/photos/idu_fitri_pak_iwan.png",
+    "assets/photos/idul_fitri_pak_iwan.png",
     "assets/photos/kelulusan.png",
     "assets/photos/pentas_seni.png",
   ],
@@ -68,6 +68,10 @@ const config = {
   confettiSfx: "assets/song/confetti-pop-sound-effect.mp3",
   confettiSfxVolume: 1,
   confettiSfxDelay: 500,
+  bonusTitle: "Hadiah Terakhir",
+  bonusMessage: "Semua kotak sudah dibuka. Ini bonus kecil sebagai penutup.",
+  bonusButton: "Lihat Foto Bonus",
+  bonusPhoto: ""
 };
 
 const iconMap = {
@@ -249,9 +253,189 @@ const bindText = (key, value) => {
   });
 };
 
+const toTitleCase = (value) =>
+  value.replace(/\w\S*/g, (word) =>
+    `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}`
+  );
+
+const formatCaptionFromPath = (path) => {
+  const filename = path.split("/").pop() || path;
+  const name = filename.replace(/\.[^/.]+$/, "");
+  const cleaned = name.replace(/[_-]+/g, " ").trim();
+  return cleaned ? toTitleCase(cleaned) : "Foto Kenangan";
+};
+
+const createPhotoCaptionMap = () => {
+  const map = new Map();
+
+  if (Array.isArray(config.photoCaptions)) {
+    config.photos.forEach((src, index) => {
+      const caption = config.photoCaptions[index];
+      if (caption) map.set(src, caption);
+    });
+  } else if (config.photoCaptions && typeof config.photoCaptions === "object") {
+    Object.entries(config.photoCaptions).forEach(([src, caption]) => {
+      if (caption) map.set(src, caption);
+    });
+  }
+
+  return map;
+};
+
+const resolveBonusPhoto = () => {
+  if (config.bonusPhoto === null) return null;
+  if (config.bonusPhoto) return config.bonusPhoto;
+  if (Array.isArray(config.photos) && config.photos.length) {
+    return config.photos[config.photos.length - 1];
+  }
+  return null;
+};
+
+const setupGalleryProgress = (wrapper, total) => {
+  const progress = document.querySelector("[data-gallery-progress]");
+  if (!progress) return null;
+
+  const label = progress.querySelector("[data-progress-label]");
+  const fill = progress.querySelector("[data-progress-fill]");
+  const track = progress.querySelector("[data-progress-track]");
+
+  if (!total) {
+    progress.style.display = "none";
+    return null;
+  }
+
+  const update = (opened) => {
+    if (label) label.textContent = `${opened}/${total} kotak terbuka`;
+    if (fill) fill.style.width = `${Math.round((opened / total) * 100)}%`;
+    if (track) {
+      track.setAttribute("aria-valuenow", String(opened));
+      track.setAttribute("aria-valuemax", String(total));
+    }
+  };
+
+  update(0);
+  return { update };
+};
+
+const setupBonusCard = (wrapper, captionMap) => {
+  if (!wrapper) return null;
+
+  let card = wrapper.querySelector(".bonus-card");
+  if (!card) {
+    card = document.createElement("div");
+    card.className = "bonus-card is-hidden";
+    card.setAttribute("data-bonus", "true");
+    card.innerHTML = `
+      <p class="bonus-title"></p>
+      <p class="bonus-message"></p>
+      <button class="bonus-button" type="button"></button>
+    `;
+    wrapper.appendChild(card);
+  }
+
+  const title = card.querySelector(".bonus-title");
+  const message = card.querySelector(".bonus-message");
+  const button = card.querySelector(".bonus-button");
+
+  const bonusSrc = resolveBonusPhoto();
+  const caption = bonusSrc
+    ? captionMap.get(bonusSrc) || formatCaptionFromPath(bonusSrc)
+    : "";
+
+  if (title) title.textContent = config.bonusTitle || "Hadiah Terakhir";
+  if (message) {
+    message.textContent =
+      config.bonusMessage || "Semua kotak sudah dibuka. Ini bonus kecil sebagai penutup.";
+  }
+
+  if (button) {
+    if (bonusSrc) {
+      button.hidden = false;
+      button.textContent = config.bonusButton || "Lihat Foto Bonus";
+      if (!button.dataset.bound) {
+        button.addEventListener("click", () => openLightbox(bonusSrc, caption));
+        button.dataset.bound = "true";
+      }
+    } else {
+      button.hidden = true;
+    }
+  }
+
+  const show = () => {
+    card.classList.remove("is-hidden");
+  };
+
+  return { show };
+};
+
+let lightboxState = null;
+
+const ensureLightbox = () => {
+  if (lightboxState) return lightboxState;
+
+  const root = document.createElement("div");
+  root.className = "lightbox";
+  root.setAttribute("aria-hidden", "true");
+  root.innerHTML = `
+    <div class="lightbox-backdrop" data-close="true"></div>
+    <div class="lightbox-card" role="dialog" aria-modal="true" aria-label="Foto kenangan">
+      <button class="lightbox-close" type="button" aria-label="Tutup">&times;</button>
+      <figure class="lightbox-figure">
+        <img class="lightbox-image" alt="">
+        <figcaption class="lightbox-caption"></figcaption>
+      </figure>
+    </div>
+  `;
+
+  const image = root.querySelector(".lightbox-image");
+  const caption = root.querySelector(".lightbox-caption");
+  const closeButton = root.querySelector(".lightbox-close");
+  const backdrop = root.querySelector(".lightbox-backdrop");
+
+  const close = () => {
+    root.classList.remove("is-visible");
+    root.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("is-lightbox-open");
+    image.src = "";
+    image.alt = "";
+    caption.textContent = "";
+  };
+
+  closeButton.addEventListener("click", close);
+  backdrop.addEventListener("click", close);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
+
+  document.body.appendChild(root);
+
+  lightboxState = { root, image, caption, close };
+  return lightboxState;
+};
+
+const openLightbox = (src, captionText) => {
+  if (!src) return;
+  const { root, image, caption } = ensureLightbox();
+
+  image.src = src;
+  image.alt = captionText ? `Foto kenangan: ${captionText}` : "Foto kenangan";
+  caption.textContent = captionText || "";
+
+  root.classList.add("is-visible");
+  root.setAttribute("aria-hidden", "false");
+  document.body.classList.add("is-lightbox-open");
+};
+
 const renderPhotos = () => {
   const wrapper = document.querySelector("[data-photos]");
   if (!wrapper) return;
+
+  const captionMap = createPhotoCaptionMap();
+  const getCaption = (src) => captionMap.get(src) || formatCaptionFromPath(src);
+  const total = config.photos.length;
+  const progress = setupGalleryProgress(wrapper, total);
+  const bonus = setupBonusCard(wrapper, captionMap);
+  let openedCount = 0;
 
   const photoPool = [...config.photos];
   const pickRandomPhoto = () => {
@@ -265,12 +449,21 @@ const renderPhotos = () => {
   const openGiftBox = (box) => {
     if (box.dataset.opened === "true") return;
     const img = box.querySelector(".gift-image");
+    const captionEl = box.querySelector(".gift-caption");
     const src = pickRandomPhoto();
+    const caption = getCaption(src);
     img.src = src;
-    img.alt = `Foto bersama ${config.namaGuru}`;
+    img.alt = caption ? `Foto kenangan: ${caption}` : `Foto bersama ${config.namaGuru}`;
+    if (captionEl) captionEl.textContent = caption;
+    box.dataset.photo = src;
+    box.dataset.caption = caption;
     box.dataset.opened = "true";
     box.classList.add("is-open");
     playOpenSound();
+
+    openedCount += 1;
+    if (progress) progress.update(openedCount);
+    if (bonus && openedCount >= total) bonus.show();
   };
 
   if (!config.photos.length) {
@@ -308,8 +501,18 @@ const renderPhotos = () => {
     `;
     cover.addEventListener("click", () => openGiftBox(slide));
 
+    slide.addEventListener("click", (event) => {
+      if (slide.dataset.opened !== "true") return;
+      if (event.target.closest(".gift-cover")) return;
+      openLightbox(slide.dataset.photo, slide.dataset.caption);
+    });
+
+    const caption = document.createElement("span");
+    caption.className = "gift-caption";
+
     slide.appendChild(img);
     slide.appendChild(cover);
+    slide.appendChild(caption);
     wrapper.appendChild(slide);
   });
 };
