@@ -71,7 +71,11 @@ const config = {
   bonusTitle: "Hadiah Terakhir",
   bonusMessage: "Semua kotak sudah dibuka. Ini bonus kecil sebagai penutup.",
   bonusButton: "Lihat Foto Bonus",
-  bonusPhoto: ""
+  bonusPhoto: "assets/photos/special_photo.png",
+  bonusDownloadLabel: "Download Foto Bonus",
+  bonusShareCaption:
+    "Wajib diposting di sosmed dengan suasana gembira! Terima kasih untuk semuanya. #XIIpplg2 #TerimaKasihGuru",
+  bonusShareButton: "Salin Caption"
 };
 
 const iconMap = {
@@ -282,6 +286,39 @@ const createPhotoCaptionMap = () => {
   return map;
 };
 
+const createDownloadName = (captionText, fallback) => {
+  const safe = (captionText || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return safe || fallback;
+};
+
+const copyTextToClipboard = async (text) => {
+  if (!text) return false;
+
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const ok = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  return ok;
+};
+
 const resolveBonusPhoto = () => {
   if (config.bonusPhoto === null) return null;
   if (config.bonusPhoto) return config.bonusPhoto;
@@ -353,7 +390,14 @@ const setupBonusCard = (wrapper, captionMap) => {
       button.hidden = false;
       button.textContent = config.bonusButton || "Lihat Foto Bonus";
       if (!button.dataset.bound) {
-        button.addEventListener("click", () => openLightbox(bonusSrc, caption));
+        button.addEventListener("click", () =>
+          openLightbox(bonusSrc, caption, {
+            download: true,
+            downloadUrl: bonusSrc,
+            shareCaption: config.bonusShareCaption,
+            shareLabel: config.bonusShareButton
+          })
+        );
         button.dataset.bound = "true";
       }
     } else {
@@ -384,11 +428,23 @@ const ensureLightbox = () => {
         <img class="lightbox-image" alt="">
         <figcaption class="lightbox-caption"></figcaption>
       </figure>
+      <div class="lightbox-actions">
+        <a class="lightbox-download" href="#" download hidden></a>
+      </div>
+      <div class="lightbox-share" hidden>
+        <p class="lightbox-share-title">Caption sosmed</p>
+        <p class="lightbox-share-text"></p>
+        <button class="lightbox-share-button" type="button">Salin Caption</button>
+      </div>
     </div>
   `;
 
   const image = root.querySelector(".lightbox-image");
   const caption = root.querySelector(".lightbox-caption");
+  const download = root.querySelector(".lightbox-download");
+  const shareWrap = root.querySelector(".lightbox-share");
+  const shareText = root.querySelector(".lightbox-share-text");
+  const shareButton = root.querySelector(".lightbox-share-button");
   const closeButton = root.querySelector(".lightbox-close");
   const backdrop = root.querySelector(".lightbox-backdrop");
 
@@ -399,7 +455,31 @@ const ensureLightbox = () => {
     image.src = "";
     image.alt = "";
     caption.textContent = "";
+    if (download) {
+      download.hidden = true;
+      download.removeAttribute("href");
+      download.removeAttribute("download");
+      download.textContent = "";
+    }
+    if (shareWrap && shareText && shareButton) {
+      shareWrap.hidden = true;
+      shareText.textContent = "";
+      shareButton.textContent = config.bonusShareButton || "Salin Caption";
+    }
   };
+
+  if (shareButton && !shareButton.dataset.bound) {
+    shareButton.addEventListener("click", async () => {
+      if (!shareText) return;
+      const text = shareText.textContent || "";
+      const ok = await copyTextToClipboard(text);
+      shareButton.textContent = ok ? "Tersalin!" : "Gagal salin";
+      window.setTimeout(() => {
+        shareButton.textContent = config.bonusShareButton || "Salin Caption";
+      }, 1400);
+    });
+    shareButton.dataset.bound = "true";
+  }
 
   closeButton.addEventListener("click", close);
   backdrop.addEventListener("click", close);
@@ -409,17 +489,52 @@ const ensureLightbox = () => {
 
   document.body.appendChild(root);
 
-  lightboxState = { root, image, caption, close };
+  lightboxState = {
+    root,
+    image,
+    caption,
+    download,
+    shareWrap,
+    shareText,
+    shareButton,
+    close
+  };
   return lightboxState;
 };
 
-const openLightbox = (src, captionText) => {
+const openLightbox = (src, captionText, options = {}) => {
   if (!src) return;
-  const { root, image, caption } = ensureLightbox();
+  const { root, image, caption, download, shareWrap, shareText, shareButton } =
+    ensureLightbox();
 
   image.src = src;
   image.alt = captionText ? `Foto kenangan: ${captionText}` : "Foto kenangan";
   caption.textContent = captionText || "";
+
+  if (download && options.download) {
+    const name = createDownloadName(captionText, "special-photo");
+    download.hidden = false;
+    download.href = options.downloadUrl || src;
+    download.setAttribute("download", options.downloadName || name);
+    download.textContent =
+      options.downloadLabel || config.bonusDownloadLabel || "Download Foto Bonus";
+  } else if (download) {
+    download.hidden = true;
+    download.removeAttribute("href");
+    download.removeAttribute("download");
+    download.textContent = "";
+  }
+
+  if (shareWrap && shareText && shareButton && options.shareCaption) {
+    shareWrap.hidden = false;
+    shareText.textContent = options.shareCaption;
+    shareButton.textContent =
+      options.shareLabel || config.bonusShareButton || "Salin Caption";
+  } else if (shareWrap && shareText && shareButton) {
+    shareWrap.hidden = true;
+    shareText.textContent = "";
+    shareButton.textContent = config.bonusShareButton || "Salin Caption";
+  }
 
   root.classList.add("is-visible");
   root.setAttribute("aria-hidden", "false");
