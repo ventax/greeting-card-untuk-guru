@@ -92,12 +92,42 @@
             </div>
         </section>
 
-        <nav class="page-nav" aria-label="Navigasi halaman">
-            <span class="nav-progress">Halaman 1 dari 3</span>
-            <div class="nav-actions">
-                <a class="nav-button primary" href="story.html">Lanjut: Pesan & Momen</a>
+        <section class="section section--tilt-left message" id="message">
+            <div class="section-head">
+                <div>
+                    <p class="eyebrow">Ucapan dari kami</p>
+                    <h2 class="section-title">Pesan dari Kami</h2>
+                </div>
             </div>
-        </nav>
+            <blockquote class="message-card">
+                <span class="quote-mark">"</span>
+                <p data-bind="pesan"></p>
+                <cite>-- From : anak anak pak iw &lt;3</cite>
+            </blockquote>
+        </section>
+
+        <section class="section section--tilt-right timeline-section" id="timeline">
+            <div class="section-head">
+                <div>
+                    <p class="eyebrow">Perjalanan bersama</p>
+                    <h2 class="section-title">Momen yang Tak Terlupakan</h2>
+                </div>
+            </div>
+            <ol class="timeline" data-list="momen"></ol>
+        </section>
+
+        <section class="section section--tilt-left signatures" id="signatures">
+            <div class="section-head">
+                <div>
+                    <p class="eyebrow">Dari seluruh siswa</p>
+                    <h2 class="section-title">Tanda Tangan Siswa</h2>
+                </div>
+            </div>
+            <div class="signature-grid" data-list="siswa"></div>
+            <div class="closing-quote">
+                <p data-bind="kutipanPenutup"></p>
+            </div>
+        </section>
 
         <footer class="footer">
             <p>Dibuat dengan tawa, kenangan, dan banyak terima kasih.</p>
