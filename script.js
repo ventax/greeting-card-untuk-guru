@@ -86,6 +86,25 @@ const iconMap = {
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const giftPlaceholder = "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=";
+const audioStorageKey = "bgm-state-v1";
+
+const readAudioState = () => {
+  if (!window.sessionStorage) return null;
+  try {
+    return JSON.parse(window.sessionStorage.getItem(audioStorageKey) || "null");
+  } catch (error) {
+    return null;
+  }
+};
+
+const writeAudioState = (state) => {
+  if (!window.sessionStorage) return;
+  try {
+    window.sessionStorage.setItem(audioStorageKey, JSON.stringify(state));
+  } catch (error) {
+    return;
+  }
+};
 
 const setupPageTransitions = () => {
   const page = document.querySelector(".page");
@@ -196,7 +215,24 @@ const setupAudio = () => {
 
   document.body.appendChild(audio);
 
-  let unlocked = false;
+  const savedState = readAudioState() || {};
+  let unlocked = Boolean(savedState.unlocked);
+  const resumeTime =
+    typeof savedState.time === "number" && Number.isFinite(savedState.time)
+      ? savedState.time
+      : null;
+  let lastWrite = 0;
+
+  if (resumeTime !== null) {
+    audio.addEventListener("loadedmetadata", () => {
+      const duration = Number.isFinite(audio.duration) ? audio.duration : null;
+      if (duration !== null) {
+        audio.currentTime = Math.min(resumeTime, Math.max(duration - 0.2, 0));
+      } else {
+        audio.currentTime = resumeTime;
+      }
+    });
+  }
 
   const hidePrompt = () => {
     const prompt = document.querySelector(".audio-prompt");
@@ -208,6 +244,11 @@ const setupAudio = () => {
       await audio.play();
       unlocked = true;
       hidePrompt();
+      writeAudioState({
+        time: audio.currentTime || 0,
+        unlocked: true,
+        playing: true
+      });
       return true;
     } catch (error) {
       return false;
@@ -226,6 +267,7 @@ const setupAudio = () => {
   };
 
   const ensurePrompt = () => {
+    if (unlocked) return;
     if (document.querySelector(".audio-prompt")) return;
     const overlay = document.createElement("div");
     overlay.className = "audio-prompt";
@@ -243,12 +285,31 @@ const setupAudio = () => {
   };
 
   tryPlay().then((ok) => {
-    if (!ok) ensurePrompt();
+    if (!ok && !unlocked) ensurePrompt();
   });
 
   window.addEventListener("pointerdown", handleUnlock);
   window.addEventListener("keydown", handleUnlock);
   window.addEventListener("touchstart", handleUnlock, { passive: true });
+
+  const saveState = (force) => {
+    const now = Date.now();
+    if (!force && now - lastWrite < 4000) return;
+    lastWrite = now;
+    writeAudioState({
+      time: audio.currentTime || 0,
+      unlocked,
+      playing: !audio.paused
+    });
+  };
+
+  audio.addEventListener("timeupdate", () => saveState(false));
+  audio.addEventListener("play", () => saveState(true));
+  audio.addEventListener("pause", () => saveState(true));
+  window.addEventListener("pagehide", () => saveState(true));
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) saveState(true);
+  });
 };
 
 const bindText = (key, value) => {
